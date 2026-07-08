@@ -22,6 +22,13 @@ namespace DocxTemplater.Formatter
         // embedding the same image again for every insertion.
         private readonly Dictionary<(object TemplateValue, OpenXmlPart TargetPart), Dictionary<string, string>> m_importedRelationshipIds = new();
 
+        private readonly bool m_mergeParaContent;
+
+        public SubTemplateFormatter(bool mergeParaContent)
+        {
+            m_mergeParaContent = mergeParaContent;
+        }
+
         public bool CanHandle(Type type, string prefix)
         {
             return prefix.Equals("template", StringComparison.CurrentCultureIgnoreCase) ||
@@ -121,8 +128,25 @@ namespace DocxTemplater.Formatter
             else if (templateElement is Paragraph paragraph)
             {
                 var parent = target.GetFirstAncestor<Paragraph>() ?? throw new OpenXmlTemplateException("Could not find parent to insert template");
-                var firstPart = parent.SplitAfterElement(target).First();
-                insertedElements.Add(firstPart.InsertAfterSelf(paragraph.CloneNode(true)));
+
+                if (m_mergeParaContent)
+                {
+                    var insertionPoint = (OpenXmlCompositeElement)target.GetFirstAncestor<Run>() ?? throw new OpenXmlTemplateException("Could not find run to insert inline template");
+                    foreach (var child in paragraph.ChildElements.Where(x => x is not ParagraphProperties))
+                    {
+                        if (child is OpenXmlCompositeElement elem)
+                        {
+                            var clonedChild = elem.CloneNode(true);
+                            insertedElements.Add(insertionPoint.InsertAfterSelf(clonedChild));
+                            insertionPoint = elem;
+                        }
+                    }
+                }
+                else
+                {
+                    var firstPart = parent.SplitAfterElement(target).First();
+                    insertedElements.Add(firstPart.InsertAfterSelf(paragraph.CloneNode(true)));
+                }
             }
             else if (templateElement is Run run)
             {

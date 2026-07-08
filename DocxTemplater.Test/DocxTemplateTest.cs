@@ -966,6 +966,65 @@ namespace DocxTemplater.Test
             var body = document.MainDocumentPart.Document.Body;
             //check values have been replaced
             Assert.That(body.InnerText, Is.EqualTo("Start of DocumentItem1 Test Item1  55Item2 Test Item2  96"));
+
+            //check paragraphs have been added
+            Assert.That(body.ChildElements.OfType<Paragraph>().Count(), Is.EqualTo(5));
+            Assert.That(body.ChildElements.Any(e => e is not Paragraph), Is.False);
+        }
+
+        [Test]
+        public void SupTemplateInlineTest()
+        {
+            var template = @"<w:p xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
+                              <w:pPr>
+                                <w:pBdr>
+                                  <w:bottom w:val=""double"" w:sz=""6"" w:space=""1"" w:color=""auto""/>
+                                </w:pBdr>
+                              </w:pPr>
+                              <w:r>
+                                <w:t>Test {{Name}} {{Number}}</w:t>
+                              </w:r>
+                            </w:p>";
+
+            using var memStream = new MemoryStream();
+            using var wpDocument = WordprocessingDocument.Create(memStream, WordprocessingDocumentType.Document);
+
+            MainDocumentPart mainPart = wpDocument.AddMainDocumentPart();
+            mainPart.Document = new Document(new Body(
+                new Paragraph(
+                    new Run(new Text("Start of Document")),
+                    new Break(),
+                    new Run(new Text("{{ds.Item}:T('ds.Template')}"))
+                )
+            ));
+            wpDocument.Save();
+            memStream.Position = 0;
+            var docTemplate = new DocxTemplate(
+                memStream,
+                new ProcessSettings
+                {
+                    MergeSubTemplatesParagraph = true
+                }
+            );
+            docTemplate.BindModel("ds",
+                new
+                {
+                    Template = template,
+                    Item = new { Name = "Item1 ", Number = 55 }
+                });
+            var result = docTemplate.Process();
+            //docTemplate.Validate();
+            Assert.That(result, Is.Not.Null);
+            result.Position = 0;
+
+            var document = WordprocessingDocument.Open(result, false);
+            var body = document.MainDocumentPart.Document.Body;
+            //check values have been replaced
+            Assert.That(body.InnerText, Is.EqualTo("Start of DocumentTest Item1  55"));
+
+            //check paragraphs have been merged
+            Assert.That(body.ChildElements.OfType<Paragraph>().Count(), Is.EqualTo(1));
+            Assert.That(body.ChildElements.Any(e => e is not Paragraph), Is.False);
         }
 
         [TestCase(true)]
