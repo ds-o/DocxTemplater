@@ -981,8 +981,13 @@ namespace DocxTemplater.Test
                                   <w:bottom w:val=""double"" w:sz=""6"" w:space=""1"" w:color=""auto""/>
                                 </w:pBdr>
                               </w:pPr>
+                              <w:bookmarkStart w:id=""1"" w:name=""ImportantSection""/>
                               <w:r>
-                                <w:t>Test {{Name}} {{Number}}</w:t>
+                                <w:t>First run</w:t>
+                              </w:r>
+                              <w:bookmarkEnd w:id=""1""/>
+                              <w:r>
+                                <w:t>Second run {{Name}} {{Number}}</w:t>
                               </w:r>
                             </w:p>";
 
@@ -1020,11 +1025,25 @@ namespace DocxTemplater.Test
             var document = WordprocessingDocument.Open(result, false);
             var body = document.MainDocumentPart.Document.Body;
             //check values have been replaced
-            Assert.That(body.InnerText, Is.EqualTo("Start of DocumentTest Item1  55"));
+            Assert.That(body.InnerText, Is.EqualTo("Start of DocumentFirst runSecond run Item1  55"));
 
             //check paragraphs have been merged
             Assert.That(body.ChildElements.OfType<Paragraph>().Count(), Is.EqualTo(1));
             Assert.That(body.ChildElements.Any(e => e is not Paragraph), Is.False);
+
+            var para = body.GetFirstChild<Paragraph>()!;
+            Assert.That(para.ChildElements.Count, Is.EqualTo(6));
+            Assert.That(para.ChildElements.OfType<Run>().Count(), Is.EqualTo(3));
+            Assert.That(para.ChildElements.OfType<BookmarkStart>().Count(), Is.EqualTo(1));
+            Assert.That(para.ChildElements.OfType<BookmarkEnd>().Count(), Is.EqualTo(1));
+
+            // This accounts for the Break element
+            var unknows = para.ChildElements.OfType<OpenXmlUnknownElement>();
+            Assert.That(unknows.Count(), Is.EqualTo(1));
+            Assert.That(unknows.First<OpenXmlUnknownElement>().LocalName, Is.EqualTo("br"));
+
+            // Any Paragraph properties should have been removed
+            Assert.That(para.ChildElements.OfType<PreviousParagraphProperties>().Any(), Is.False);
         }
 
         [TestCase(true)]

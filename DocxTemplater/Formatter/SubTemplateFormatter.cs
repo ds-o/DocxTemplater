@@ -131,14 +131,14 @@ namespace DocxTemplater.Formatter
 
                 if (m_mergeParaContent)
                 {
-                    var insertionPoint = (OpenXmlCompositeElement)target.GetFirstAncestor<Run>() ?? throw new OpenXmlTemplateException("Could not find run to insert inline template");
+                    var insertionPoint = (OpenXmlElement)target.GetFirstAncestor<Run>() ?? throw new OpenXmlTemplateException("Could not find run to insert inline template");
                     foreach (var child in paragraph.ChildElements.Where(x => x is not ParagraphProperties))
                     {
-                        if (child is OpenXmlCompositeElement elem)
+                        if (child is OpenXmlElement elem)
                         {
                             var clonedChild = elem.CloneNode(true);
                             insertedElements.Add(insertionPoint.InsertAfterSelf(clonedChild));
-                            insertionPoint = elem;
+                            insertionPoint = clonedChild;
                         }
                     }
                 }
