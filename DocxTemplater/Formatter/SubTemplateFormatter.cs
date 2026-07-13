@@ -131,7 +131,9 @@ namespace DocxTemplater.Formatter
 
                 if (m_mergeParaContent)
                 {
-                    var insertionPoint = (OpenXmlElement)target.GetFirstAncestor<Run>() ?? throw new OpenXmlTemplateException("Could not find run to insert inline template");
+                    var firstRun = (OpenXmlElement)target.GetFirstAncestor<Run>() ?? throw new OpenXmlTemplateException("Could not find run to insert inline template");
+                    var insertionPoint = firstRun.SplitBeforeElement(target).First();
+
                     foreach (var child in paragraph.ChildElements.Where(x => x is not ParagraphProperties))
                     {
                         if (child is OpenXmlElement elem)

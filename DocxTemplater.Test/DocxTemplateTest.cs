@@ -999,7 +999,10 @@ namespace DocxTemplater.Test
                 new Paragraph(
                     new Run(new Text("Start of Document")),
                     new Break(),
-                    new Run(new Text("{{ds.Item}:T('ds.Template')}"))
+                    new Run(new Text("{{ds.Item1}:T('ds.Template')}")),
+                    new Run(new Text("Pre-tag2 {{ds.Item2}:T('ds.Template')} post-tag2")),
+                    new Break(),
+                    new Run(new Text("End of Document"))
                 )
             ));
             wpDocument.Save();
@@ -1015,7 +1018,8 @@ namespace DocxTemplater.Test
                 new
                 {
                     Template = template,
-                    Item = new { Name = "Item1 ", Number = 55 }
+                    Item1 = new { Name = "Item1 ", Number = 55 },
+                    Item2 = new { Name = "Item2 ", Number = 33 }
                 });
             var result = docTemplate.Process();
             //docTemplate.Validate();
@@ -1025,21 +1029,21 @@ namespace DocxTemplater.Test
             var document = WordprocessingDocument.Open(result, false);
             var body = document.MainDocumentPart.Document.Body;
             //check values have been replaced
-            Assert.That(body.InnerText, Is.EqualTo("Start of DocumentFirst runSecond run Item1  55"));
+            Assert.That(body.InnerText, Is.EqualTo("Start of DocumentFirst runSecond run Item1  55Pre-tag2 First runSecond run Item2  33 post-tag2End of Document"));
 
             //check paragraphs have been merged
             Assert.That(body.ChildElements.OfType<Paragraph>().Count(), Is.EqualTo(1));
             Assert.That(body.ChildElements.Any(e => e is not Paragraph), Is.False);
 
             var para = body.GetFirstChild<Paragraph>()!;
-            Assert.That(para.ChildElements.Count, Is.EqualTo(6));
-            Assert.That(para.ChildElements.OfType<Run>().Count(), Is.EqualTo(3));
-            Assert.That(para.ChildElements.OfType<BookmarkStart>().Count(), Is.EqualTo(1));
-            Assert.That(para.ChildElements.OfType<BookmarkEnd>().Count(), Is.EqualTo(1));
+            Assert.That(para.ChildElements.Count, Is.EqualTo(14));
+            Assert.That(para.ChildElements.OfType<Run>().Count(), Is.EqualTo(8));
+            Assert.That(para.ChildElements.OfType<BookmarkStart>().Count(), Is.EqualTo(2));
+            Assert.That(para.ChildElements.OfType<BookmarkEnd>().Count(), Is.EqualTo(2));
 
             // This accounts for the Break element
             var unknows = para.ChildElements.OfType<OpenXmlUnknownElement>();
-            Assert.That(unknows.Count(), Is.EqualTo(1));
+            Assert.That(unknows.Count(), Is.EqualTo(2));
             Assert.That(unknows.First<OpenXmlUnknownElement>().LocalName, Is.EqualTo("br"));
 
             // Any Paragraph properties should have been removed
