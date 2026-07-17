@@ -50,7 +50,7 @@ namespace DocxTemplater.Formatter
             {
                 var firstParagraph = rootElement.GetFirstChild<Paragraph>();
                 var paragraph = new Paragraph();
-                var text = new Text(string.Join("\n", m_errors.Distinct()));
+                var text = new Text(string.Join("\n", m_errors.Distinct())) { Space = SpaceProcessingModeValues.Preserve };
                 paragraph.AppendChild(new Run(new RunProperties()
                 {
                     Color = new Color() { Val = "FF0000" },
@@ -469,7 +469,7 @@ namespace DocxTemplater.Formatter
 
                     if (!string.IsNullOrWhiteSpace(parts[i]))
                     {
-                        lastElement = lastElement.InsertAfterSelf(new Text(parts[i]));
+                        lastElement = lastElement.InsertAfterSelf(new Text(parts[i]) { Space = SpaceProcessingModeValues.Preserve });
                     }
                 }
 

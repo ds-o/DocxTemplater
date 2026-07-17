@@ -324,7 +324,7 @@ namespace DocxTemplater.Test
             memStream.Position = 0;
 
             var docTemplate = new DocxTemplate(memStream);
-            docTemplate.BindModel("ds", "FirstLine\r\nSecondLine\nThirdLine");
+            docTemplate.BindModel("ds", " FirstLine\r\n  SecondLine\n   ThirdLine");
             var result = docTemplate.Process();
             docTemplate.Validate();
             Assert.That(result, Is.Not.Null);
@@ -335,9 +335,9 @@ namespace DocxTemplater.Test
             // stays on the same line as "ThirdLine" - a trailing <w:br/> here would push " End"
             // onto a spurious extra line (and, for a value alone in a table cell, add an empty row).
             Assert.That(body.InnerXml, Is.EqualTo("<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:r><w:t xml:space=\"preserve\">" +
-                                                  "Start </w:t><w:t>FirstLine</w:t>" +
-                                                  "<w:br /><w:t>SecondLine</w:t>" +
-                                                  "<w:br /><w:t>ThirdLine</w:t>" +
+                                                  "Start </w:t><w:t xml:space=\"preserve\"> FirstLine</w:t>" +
+                                                  "<w:br /><w:t xml:space=\"preserve\">  SecondLine</w:t>" +
+                                                  "<w:br /><w:t xml:space=\"preserve\">   ThirdLine</w:t>" +
                                                   "<w:t xml:space=\"preserve\"> End</w:t></w:r></w:p>"));
         }
 
