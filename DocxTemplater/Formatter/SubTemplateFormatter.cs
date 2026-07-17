@@ -108,6 +108,12 @@ namespace DocxTemplater.Formatter
             // still point at the source document's parts and must be re-imported / re-mapped below.
             var insertedElements = new List<OpenXmlElement>();
 
+            if (m_mergeParaContent && templateElement is Body
+                && templateElement.ChildElements is [Paragraph] or [Paragraph, SectionProperties])
+            {
+                templateElement = (Paragraph)templateElement.ChildElements[0];
+            }
+
             if (templateElement is Body body)
             {
                 var parent = target.GetFirstAncestor<Paragraph>() ?? throw new OpenXmlTemplateException("Could not find parent to insert template");
@@ -133,15 +139,26 @@ namespace DocxTemplater.Formatter
                 {
                     var firstRun = (OpenXmlElement)target.GetFirstAncestor<Run>() ?? throw new OpenXmlTemplateException("Could not find run to insert inline template");
                     var insertionPoint = firstRun.SplitBeforeElement(target).First();
+                    var runProperties = insertionPoint.GetFirstChild<RunProperties>();
 
                     foreach (var child in paragraph.ChildElements.Where(x => x is not ParagraphProperties))
                     {
-                        if (child is OpenXmlElement elem)
+                        var clonedChild = child.CloneNode(true);
+                        if (clonedChild is Run run && runProperties != null)
                         {
-                            var clonedChild = elem.CloneNode(true);
-                            insertedElements.Add(insertionPoint.InsertAfterSelf(clonedChild));
-                            insertionPoint = clonedChild;
+                            var existingProps = run.RunProperties;
+
+                            if (existingProps != null)
+                            {
+                                MergeRunPropertiesInto(runProperties, existingProps);
+                            }
+                            else
+                            {
+                                run.PrependChild((RunProperties)runProperties.CloneNode(true));
+                            }
                         }
+                        insertedElements.Add(insertionPoint.InsertAfterSelf(clonedChild));
+                        insertionPoint = clonedChild;
                     }
                 }
                 else
@@ -188,6 +205,27 @@ namespace DocxTemplater.Formatter
             }
 
             target.RemoveWithEmptyParent();
+        }
+
+        private static void MergeRunPropertiesInto(RunProperties baseProperties, RunProperties curProperties)
+        {
+            foreach (var property in baseProperties.ChildElements)
+            {
+                var existing = curProperties.ChildElements.Where(x => x.GetType() == property.GetType()).FirstOrDefault((OpenXmlElement)null);
+                if (existing != null)
+                {
+
+                    // keep font
+                    if (property is not RunFonts and not RunStyle)
+                    {
+                        curProperties.ReplaceChild(property.CloneNode(true), existing);
+                    }
+                }
+                else
+                {
+                    curProperties.AddChild(property.CloneNode(true));
+                }
+            }
         }
 
         // Copies parts referenced by the inserted elements (via r:embed / r:id / r:link) from the source part

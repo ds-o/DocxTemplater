@@ -414,6 +414,23 @@ The value in front of the formatter (here `ds`) is bound as `ds` *inside* the in
 
 **_NOTE:_** The content is inserted by copying the OpenXML body elements into the host document. Styles, numbering definitions and images stored in the inserted document's own parts are not imported.
 
+### Inserting sub-template as inline
+
+To leverage small sub-templates, the insertion of new lines can be prevented so the sub-template content is actually inlined in the target paragraph.
+This behavior can be enabled via the `ProcessSettings`:
+```csharp
+var docTemplate = new DocxTemplate(memStream, new ProcessSettings()
+{
+    MergeSubTemplatesParagraph = true
+});
+var result = docTemplate.Process();
+```
+
+Text inserted inherit the style applied to the target paragraph __at the exception of the font and its style__. This way a given sub-template can be used in different
+places and follow the current document style.
+
+Note: by extension, when this mode is enabled, docx document sub-templates made of a single paragraph will also be processed inline.
+
 ---
 ## Content Controls
 
@@ -464,7 +481,7 @@ A tag that is not a placeholder - or whose placeholder is a block directive such
 ## Whitespace Trimming Around Directives
 
 To improve template readability without affecting the final output, line breaks before and after template directives (e.g., `{{#...}}, {{/}}, {{:}}`) can be automatically removed.
-This behavior can be enabled via the ProcessSettings:
+This behavior can be enabled via the `ProcessSettings`:
 ```csharp
 var docTemplate = new DocxTemplate(memStream, new ProcessSettings()
 {
