@@ -1,7 +1,6 @@
 ﻿using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
-using System.Text;
 
 namespace DocxTemplater.Test
 {
@@ -167,7 +166,8 @@ namespace DocxTemplater.Test
 
             //render it
             using var docTemplate = new DocxTemplate(memStream,
-                new ProcessSettings {
+                new ProcessSettings
+                {
                     MergeSubTemplatesParagraph = true
                 });
             docTemplate.BindModel("ds",
@@ -184,8 +184,6 @@ namespace DocxTemplater.Test
 
             var document = WordprocessingDocument.Open(result, false);
             var body = document.MainDocumentPart.Document.Body;
-            Console.WriteLine(body.InnerText);
-            // ...
 
             if (multiParagraph)
             {
@@ -240,5 +238,177 @@ namespace DocxTemplater.Test
             Assert.That(body.InnerText, Is.EqualTo("Start of DocumentFirst inserted paragraph for JohnSecond inserted paragraphEnd of Document"));
         }
 
+        [Test]
+        public void TestRunPropertiesCascading()
+        {
+            var template = @"<w:p xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main"">
+                              <w:pPr>
+                                <w:pBdr>
+                                  <w:bottom w:val=""double"" w:sz=""6"" w:space=""1"" w:color=""auto""/>
+                                </w:pBdr>
+                              </w:pPr>
+                              <w:bookmarkStart w:id=""1"" w:name=""ImportantSection""/>
+                              <w:r>
+                                <w:t>no attributes</w:t>
+                              </w:r>
+                              <w:bookmarkEnd w:id=""1""/>
+                              <w:r>
+                                <w:rPr>
+                                  <w:color w:val=""0070C0"" />
+                                </w:rPr>
+                                <w:t>color</w:t>
+                              </w:r>
+                              <w:r>
+                                <w:rPr>
+                                  <w:u w:val=""single"" />
+                                </w:rPr>
+                                <w:t>underline</w:t>
+                              </w:r>
+                              <w:r>
+                                <w:rPr>
+                                  <w:sz w:val=""40"" />
+                                  <w:szCs w:val=""40"" />
+                                </w:rPr>
+                                <w:t>font size</w:t>
+                              </w:r>
+                              <w:r>
+                                <w:rPr>
+                                  <w:rFonts w:ascii=""Cambria"" w:hAnsi=""Cambria"" />
+                                </w:rPr>
+                                <w:t>font</w:t>
+                              </w:r>
+                            </w:p>";
+
+            using var memStream = new MemoryStream();
+            using var wpDocument = WordprocessingDocument.Create(memStream, WordprocessingDocumentType.Document);
+
+            MainDocumentPart mainPart = wpDocument.AddMainDocumentPart();
+            mainPart.Document = new Document(new Body(
+                new Paragraph(
+                    new Run(new Text("Start of Document"), new Break()),
+                    new Run(new Text("sub-template: {{.}:T('ds.Template')}"))
+                    {
+                        RunProperties = new RunProperties()
+                        {
+                            FontSize = new FontSize() { Val = "20" },
+                            Underline = new Underline()
+                            {
+                                Val = UnderlineValues.Double
+                            },
+                            Color = new Color()
+                            {
+                                Val = "808080"
+                            },
+                            RunFonts = new RunFonts()
+                            {
+                                Ascii = "Arial",
+                                HighAnsi = "Arial"
+                            }
+                        }
+                    },
+                    new Run(new Text("End of Document"))
+                )
+            ));
+            wpDocument.Save();
+            memStream.Position = 0;
+
+            var docTemplate = new DocxTemplate(
+                memStream,
+                new ProcessSettings
+                {
+                    MergeSubTemplatesParagraph = true
+                }
+            );
+            docTemplate.BindModel("ds",
+                new
+                {
+                    Template = template
+                });
+            var result = docTemplate.Process();
+            docTemplate.Validate();
+            Assert.That(result, Is.Not.Null);
+            result.Position = 0;
+
+            var document = WordprocessingDocument.Open(result, false);
+            var body = document.MainDocumentPart.Document.Body;
+            var para = body.GetFirstChild<Paragraph>()!;
+
+            Assert.That(para.ChildElements.Count, Is.EqualTo(10));
+
+            for (int i = 0; i < 9; i++)
+            {
+                var run = para.ChildElements[i] as Run;
+
+                switch (i)
+                {
+                    case 0:
+                        Assert.That(run.InnerText, Is.EqualTo("Start of Document"));
+                        break;
+                    case 1:
+                        Assert.That(run.InnerText, Is.EqualTo("sub-template: "));
+                        Assert.That(run.RunProperties.Color.Val.Value, Is.EqualTo("808080"));
+                        Assert.That(run.RunProperties.Underline.Val.Value, Is.EqualTo(UnderlineValues.Double));
+                        Assert.That(run.RunProperties.FontSize.Val.Value, Is.EqualTo("20"));
+                        Assert.That(run.RunProperties.RunFonts.Ascii.Value, Is.EqualTo("Arial"));
+                        Assert.That(run.RunProperties.RunFonts.HighAnsi.Value, Is.EqualTo("Arial"));
+                        break;
+                    case 2:
+                        // Bookmark start
+                        break;
+                    case 3:
+                        Assert.That(run.InnerText, Is.EqualTo("no attributes"));
+
+                        Assert.That(run.RunProperties.Color.Val.Value, Is.EqualTo("808080"));
+                        Assert.That(run.RunProperties.Underline.Val.Value, Is.EqualTo(UnderlineValues.Double));
+                        Assert.That(run.RunProperties.FontSize.Val.Value, Is.EqualTo("20"));
+                        Assert.That(run.RunProperties.RunFonts.Ascii.Value, Is.EqualTo("Arial"));
+                        Assert.That(run.RunProperties.RunFonts.HighAnsi.Value, Is.EqualTo("Arial"));
+                        break;
+                    case 4:
+                        // Bookmark end
+                        break;
+                    case 5:
+                        Assert.That(run.InnerText, Is.EqualTo("color"));
+                        Assert.That(run.RunProperties.Color.Val.Value, Is.EqualTo("0070C0"));
+
+                        Assert.That(run.RunProperties.Underline.Val.Value, Is.EqualTo(UnderlineValues.Double));
+                        Assert.That(run.RunProperties.FontSize.Val.Value, Is.EqualTo("20"));
+                        Assert.That(run.RunProperties.RunFonts.Ascii.Value, Is.EqualTo("Arial"));
+                        Assert.That(run.RunProperties.RunFonts.HighAnsi.Value, Is.EqualTo("Arial"));
+                        break;
+                    case 6:
+                        Assert.That(run.InnerText, Is.EqualTo("underline"));
+
+                        Assert.That(run.RunProperties.Underline.Val.Value, Is.EqualTo(UnderlineValues.Single));
+
+                        Assert.That(run.RunProperties.Color.Val.Value, Is.EqualTo("808080"));
+                        Assert.That(run.RunProperties.FontSize.Val.Value, Is.EqualTo("20"));
+                        Assert.That(run.RunProperties.RunFonts.Ascii.Value, Is.EqualTo("Arial"));
+                        Assert.That(run.RunProperties.RunFonts.HighAnsi.Value, Is.EqualTo("Arial"));
+                        break;
+                    case 7:
+                        Assert.That(run.InnerText, Is.EqualTo("font size"));
+                        Assert.That(run.RunProperties.FontSize.Val.Value, Is.EqualTo("40"));
+
+                        Assert.That(run.RunProperties.Color.Val.Value, Is.EqualTo("808080"));
+                        Assert.That(run.RunProperties.Underline.Val.Value, Is.EqualTo(UnderlineValues.Double));
+                        Assert.That(run.RunProperties.RunFonts.Ascii.Value, Is.EqualTo("Arial"));
+                        Assert.That(run.RunProperties.RunFonts.HighAnsi.Value, Is.EqualTo("Arial"));
+                        break;
+                    case 8:
+                        Assert.That(run.InnerText, Is.EqualTo("font"));
+                        Assert.That(run.RunProperties.RunFonts.Ascii.Value, Is.EqualTo("Cambria"));
+                        Assert.That(run.RunProperties.RunFonts.HighAnsi.Value, Is.EqualTo("Cambria"));
+
+                        Assert.That(run.RunProperties.Color.Val.Value, Is.EqualTo("808080"));
+                        Assert.That(run.RunProperties.Underline.Val.Value, Is.EqualTo(UnderlineValues.Double));
+                        Assert.That(run.RunProperties.FontSize.Val.Value, Is.EqualTo("20"));
+                        break;
+                    case 9:
+                        Assert.That(run.InnerText, Is.EqualTo("End of Document"));
+                        break;
+                }
+            }
+        }
     }
 }

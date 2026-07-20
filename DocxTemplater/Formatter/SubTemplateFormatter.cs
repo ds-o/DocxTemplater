@@ -139,22 +139,22 @@ namespace DocxTemplater.Formatter
                 {
                     var firstRun = (OpenXmlElement)target.GetFirstAncestor<Run>() ?? throw new OpenXmlTemplateException("Could not find run to insert inline template");
                     var insertionPoint = firstRun.SplitBeforeElement(target).First();
-                    var runProperties = insertionPoint.GetFirstChild<RunProperties>();
+                    var targetProperties = insertionPoint.GetFirstChild<RunProperties>();
 
                     foreach (var child in paragraph.ChildElements.Where(x => x is not ParagraphProperties))
                     {
                         var clonedChild = child.CloneNode(true);
-                        if (clonedChild is Run run && runProperties != null)
+                        if (clonedChild is Run run && targetProperties != null)
                         {
-                            var existingProps = run.RunProperties;
+                            var templateProps = run.RunProperties;
 
-                            if (existingProps != null)
+                            if (templateProps != null)
                             {
-                                MergeRunPropertiesInto(runProperties, existingProps);
+                                CascadeTargetProperties(targetProperties, templateProps);
                             }
                             else
                             {
-                                run.PrependChild((RunProperties)runProperties.CloneNode(true));
+                                run.PrependChild((RunProperties)targetProperties.CloneNode(true));
                             }
                         }
                         insertedElements.Add(insertionPoint.InsertAfterSelf(clonedChild));
@@ -207,23 +207,13 @@ namespace DocxTemplater.Formatter
             target.RemoveWithEmptyParent();
         }
 
-        private static void MergeRunPropertiesInto(RunProperties baseProperties, RunProperties curProperties)
+        private static void CascadeTargetProperties(RunProperties targetProperties, RunProperties templateProperties)
         {
-            foreach (var property in baseProperties.ChildElements)
+            foreach (var property in targetProperties.ChildElements)
             {
-                var existing = curProperties.ChildElements.Where(x => x.GetType() == property.GetType()).FirstOrDefault((OpenXmlElement)null);
-                if (existing != null)
+                if (!templateProperties.ChildElements.Any(x => x.GetType() == property.GetType()))
                 {
-
-                    // keep font
-                    if (property is not RunFonts and not RunStyle)
-                    {
-                        curProperties.ReplaceChild(property.CloneNode(true), existing);
-                    }
-                }
-                else
-                {
-                    curProperties.AddChild(property.CloneNode(true));
+                    templateProperties.AddChild(property.CloneNode(true));
                 }
             }
         }
