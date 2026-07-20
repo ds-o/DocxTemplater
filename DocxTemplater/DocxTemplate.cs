@@ -53,7 +53,7 @@ namespace DocxTemplater
             Context.Initialize(m_wpDocument.MainDocumentPart);
             Processed = false;
 
-            RegisterFormatter(new SubTemplateFormatter(settings.MergeSubTemplatesParagraph));
+            RegisterFormatter(new SubTemplateFormatter(settings.InlineSubTemplates));
             RegisterExtension(new ChartProcessor());
         }
 

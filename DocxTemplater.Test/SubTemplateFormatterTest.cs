@@ -104,7 +104,7 @@ namespace DocxTemplater.Test
                 memStream,
                 new ProcessSettings
                 {
-                    MergeSubTemplatesParagraph = true
+                    InlineSubTemplates = true
                 }
             );
             docTemplate.BindModel("ds",
@@ -168,7 +168,7 @@ namespace DocxTemplater.Test
             using var docTemplate = new DocxTemplate(memStream,
                 new ProcessSettings
                 {
-                    MergeSubTemplatesParagraph = true
+                    InlineSubTemplates = true
                 });
             docTemplate.BindModel("ds",
                 new
@@ -316,7 +316,7 @@ namespace DocxTemplater.Test
                 memStream,
                 new ProcessSettings
                 {
-                    MergeSubTemplatesParagraph = true
+                    InlineSubTemplates = true
                 }
             );
             docTemplate.BindModel("ds",

@@ -22,11 +22,11 @@ namespace DocxTemplater.Formatter
         // embedding the same image again for every insertion.
         private readonly Dictionary<(object TemplateValue, OpenXmlPart TargetPart), Dictionary<string, string>> m_importedRelationshipIds = new();
 
-        private readonly bool m_mergeParaContent;
+        private readonly bool m_inlineSubTemplates;
 
-        public SubTemplateFormatter(bool mergeParaContent)
+        public SubTemplateFormatter(bool inlineSubTemplates)
         {
-            m_mergeParaContent = mergeParaContent;
+            m_inlineSubTemplates = inlineSubTemplates;
         }
 
         public bool CanHandle(Type type, string prefix)
@@ -108,7 +108,7 @@ namespace DocxTemplater.Formatter
             // still point at the source document's parts and must be re-imported / re-mapped below.
             var insertedElements = new List<OpenXmlElement>();
 
-            if (m_mergeParaContent && templateElement is Body
+            if (m_inlineSubTemplates && templateElement is Body
                 && templateElement.ChildElements is [Paragraph] or [Paragraph, SectionProperties])
             {
                 templateElement = (Paragraph)templateElement.ChildElements[0];
@@ -135,7 +135,7 @@ namespace DocxTemplater.Formatter
             {
                 var parent = target.GetFirstAncestor<Paragraph>() ?? throw new OpenXmlTemplateException("Could not find parent to insert template");
 
-                if (m_mergeParaContent)
+                if (m_inlineSubTemplates)
                 {
                     var firstRun = (OpenXmlElement)target.GetFirstAncestor<Run>() ?? throw new OpenXmlTemplateException("Could not find run to insert inline template");
                     var insertionPoint = firstRun.SplitBeforeElement(target).First();

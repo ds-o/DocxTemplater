@@ -26,13 +26,14 @@ namespace DocxTemplater
         public bool EnableContentControlTagBinding { get; set; }
 
         /// <summary>
-        /// When enabled, the content of a paragraph sub-template will be added to the destination paragraph instead of
-        /// having it inserted as a whole. This allows to control the format of the sub document fragment via the target
-        /// paragraph format (text alignment, etc.) and avoid to get an additional line return.
+        /// When enabled, the content of a sub-template made of a single top-level paragraph will be added to the
+        /// destination paragraph instead of being inserted as a whole new paragraph. This allows to control the format
+        /// of the sub document fragment via the target paragraph format (text alignment, etc.) and avoid to have an
+        /// additional line return in the rendered document.
         /// This is especially useful for inline, short, templates
         /// default: false
         /// </summary>
-        public bool MergeSubTemplatesParagraph { get; set; }
+        public bool InlineSubTemplates { get; set; }
 
         public static ProcessSettings Default => new();
     }

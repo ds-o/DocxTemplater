@@ -414,22 +414,28 @@ The value in front of the formatter (here `ds`) is bound as `ds` *inside* the in
 
 **_NOTE:_** The content is inserted by copying the OpenXML body elements into the host document. Styles, numbering definitions and images stored in the inserted document's own parts are not imported.
 
-### Inserting sub-template as inline
+### Inserting sub-template as Inline Content
 
-To leverage small sub-templates, the insertion of new lines can be prevented so the sub-template content is actually inlined in the target paragraph.
-This behavior can be enabled via the `ProcessSettings`:
+When working with small reusable sub-templates, it may be desirable to insert their content directly into the target paragraph instead of generating a new paragraph.
+
+This behavior can be enabled through `ProcessSettings`:
 ```csharp
 var docTemplate = new DocxTemplate(memStream, new ProcessSettings()
 {
-    MergeSubTemplatesParagraph = true
+    InlineSubTemplates = true
 });
 var result = docTemplate.Process();
 ```
 
-Text inserted inherit the style applied to the target paragraph __at the exception of the font and its style__. This way a given sub-template can be used in different
-places and follow the current document style.
+Inline insertion is particularly useful because it overcomes several limitations of the default sub-template insertion mode:
 
-Note: by extension, when this mode is enabled, docx document sub-templates made of a single paragraph will also be processed inline.
+- Avoids layout discrepancies caused by additional paragraphs (for example, inconsistent table row heights).
+- Allows sub-templates to be embedded seamlessly within existing text runs.
+- Preserves paragraph-level formatting defined in the parent template (alignment, spacing, indentation, etc.), which is generally what Word users expect.
+
+To prevent formatting inherited from the insertion point from overriding the sub-template's appearance, explicitly define the properties that should remain fixed within the sub-template. This allows the same sub-template to be reused in different contexts while still inheriting the surrounding document (cascading) style where appropriate.
+
+**_NOTE:_** When using this mode, DOCX sub-templates consisting of a single paragraph are also merged inline.
 
 ---
 ## Content Controls
