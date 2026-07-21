@@ -29,7 +29,7 @@ namespace DocxTemplater.Test
             var body = document.MainDocumentPart.Document.Body;
             Assert.That(body.InnerXml,
                 Is.EqualTo(
-                    @"<w:p xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main""><w:r><w:t>First Line</w:t><w:br /><w:t>Second Line</w:t><w:br /><w:t>Third Line</w:t><w:br /></w:r></w:p>"));
+                    @"<w:p xmlns:w=""http://schemas.openxmlformats.org/wordprocessingml/2006/main""><w:r><w:t xml:space=""preserve"">First Line</w:t><w:br /><w:t xml:space=""preserve"">Second Line</w:t><w:br /><w:t xml:space=""preserve"">Third Line</w:t><w:br /></w:r></w:p>"));
         }
 
 
