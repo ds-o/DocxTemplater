@@ -22,6 +22,7 @@ namespace DocxTemplater.Formatter
             m_formatters.Add(new FormatPatternFormatter());
             m_formatters.Add(new HtmlFormatter());
             m_formatters.Add(new CaseFormatter());
+            m_formatters.Add(new ParagraphsFormatter());
         }
 
         public ProcessSettings ProcessSettings

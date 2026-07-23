@@ -101,6 +101,7 @@ The syntax is case insensitive.
 | `{{(ds.Items[0].Name)}}`                                 | Expressions with array / list / dictionary index access.                                        |
 | `{{SomeBytes}:img()}`                                    | Image Formatter for image data.                                                                 |
 | `{{SomeHtmlString}:html()}`                              | Inserts HTML string into the word document.                                                     |
+| `{{MultiLineText}:paragraphs()}`                         | Renders each line of a multi-line string as its own paragraph instead of soft line breaks.     |
 | `{{ds}:template('ds.SubDocument')}`                      | Inserts another docx document (or OpenXML fragment) at the placeholder position.               |
 | `{{@i:ItemCount}}...{{i}}...{{/}}`                       | Range loop that repeats its content `ItemCount` times.                                          |
 | `{{#Items}}{?{Items._Idx % 2 == 0}}{{.}}{{/}}{{/Items}}` | Renders every second item in a list.                                                            |
@@ -287,6 +288,18 @@ The formatter name is always case insensitive.
 
 - `ToUpper`
 - `ToLower`
+
+### Paragraphs
+
+By default, newlines in a value are rendered as soft line breaks (`<w:br/>`) inside a single paragraph.
+The `paragraphs` formatter (alias `para`) renders each line of a multi-line string as its own real paragraph instead — a blank line becomes an empty paragraph.
+All created paragraphs inherit the paragraph and run properties of the placeholder, so styles, numbering and run formatting carry over to every line.
+
+```
+{{MultiLineText}:paragraphs()}
+```
+
+Text before or after the placeholder in the same paragraph is preserved: it stays with the first and last line respectively.
 
 ### FormatPatterns
 
